@@ -1,0 +1,23 @@
+node_modules
+.env
+.env.example
+coverage
+coverage.json
+typechain
+typechain-types
+
+# Hardhat files
+cache
+artifacts
+
+# Deployment info (you may want to commit this)
+# deployments.json
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+*.log
