@@ -692,3 +692,11 @@ This is the right strategy! 🚀
 *Architecture: Testnet-focused*
 *Status: Ready for deployment*
 *MUSD Integration: Complementary, not competitive*
+
+
+
+ Contract Addresses:
+  - MUSD Token: 0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503
+  - BitSaveRegistry: 0xc5E45f7888a4FdAA75291aeF8A86DC83475243e5
+  - BitSaveVault: 0xB926b83d42829b58814EE3088C163B59496c0610
+  - BitSavePayments: 0x7fC58f2d50790F6CDDB631b4757f54b893692DDe

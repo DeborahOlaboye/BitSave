@@ -1,0 +1,12 @@
+{
+  "network": "mezoTestnet",
+  "chainId": 31611,
+  "deployer": "0x1Ff9eA9F062C31cfF19Ade558E34894f07Cf7817",
+  "timestamp": "2025-10-31T14:44:01.867Z",
+  "contracts": {
+    "musd": "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
+    "registry": "0xc5E45f7888a4FdAA75291aeF8A86DC83475243e5",
+    "vault": "0xB926b83d42829b58814EE3088C163B59496c0610",
+    "payments": "0x7fC58f2d50790F6CDDB631b4757f54b893692DDe"
+  }
+}

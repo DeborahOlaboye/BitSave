@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "dotenv/config";
 
 const config: HardhatUserConfig = {
   defaultNetwork: "mezotestnet",
@@ -7,9 +8,9 @@ const config: HardhatUserConfig = {
     hardhat: {
     },
     mezotestnet: {
-      url: "https://rpc.test.mezo.org",
+      url: process.env.MEZO_RPC_URL || "https://rpc.test.mezo.org",
       chainId: 31611,
-      accounts: ["YOUR_PRIVATE_WALLET_KEY"]
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
     }
   },
   solidity: {
@@ -22,6 +23,21 @@ const config: HardhatUserConfig = {
       }
     }
   },
+  etherscan: {
+    apiKey: {
+      mezotestnet: "no-api-key-needed"
+    },
+    customChains: [
+      {
+        network: "mezotestnet",
+        chainId: 31611,
+        urls: {
+          apiURL: "https://explorer.test.mezo.org/api",
+          browserURL: "https://explorer.test.mezo.org"
+        }
+      }
+    ]
+  }
 };
 
 export default config;
