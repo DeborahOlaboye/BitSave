@@ -3,11 +3,11 @@ import "@nomicfoundation/hardhat-toolbox";
 import "dotenv/config";
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "mezotestnet",
+  defaultNetwork: "mezo-testnet",
   networks: {
     hardhat: {
     },
-    mezotestnet: {
+    "mezo-testnet": {
       url: process.env.MEZO_RPC_URL || "https://rpc.test.mezo.org",
       chainId: 31611,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
@@ -25,18 +25,21 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      mezotestnet: "no-api-key-needed"
+      "mezo-testnet": "empty"
     },
     customChains: [
       {
-        network: "mezotestnet",
+        network: "mezo-testnet",
         chainId: 31611,
         urls: {
-          apiURL: "https://explorer.test.mezo.org/api",
+          apiURL: "https://api.explorer.test.mezo.org/api",
           browserURL: "https://explorer.test.mezo.org"
         }
       }
     ]
+  },
+  sourcify: {
+    enabled: false
   }
 };
 
