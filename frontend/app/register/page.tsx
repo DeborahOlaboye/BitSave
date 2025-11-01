@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useToast } from '@/lib/contexts/ToastContext';
 import { apiService } from '@/lib/services/api';
+import { useCheckUsernameAvailability, useRegisterUsername } from '@/lib/hooks/useContracts';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -20,11 +21,37 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Contract hooks
+  const { data: isAvailable } = useCheckUsernameAvailability(username);
+  const { registerUsername, isConfirming, isSuccess, error: contractError, isPending } = useRegisterUsername();
+
   useEffect(() => {
     if (user) {
       router.push('/dashboard');
     }
   }, [user, router]);
+
+  // Handle successful on-chain registration
+  useEffect(() => {
+    if (isSuccess && address) {
+      // After on-chain registration succeeds, register in backend
+      const completeRegistration = async () => {
+        try {
+          const newUser = await apiService.registerUser(username, address);
+          setUser(newUser);
+          await refreshUser();
+          showToast('Account created successfully!', 'success');
+          router.push('/dashboard');
+        } catch (err: any) {
+          console.error('Backend registration error:', err);
+          showToast('On-chain registration succeeded, but backend sync failed. Please contact support.', 'warning');
+        } finally {
+          setLoading(false);
+        }
+      };
+      completeRegistration();
+    }
+  }, [isSuccess, address, username, setUser, refreshUser, showToast, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,21 +71,25 @@ export default function Register() {
       return;
     }
 
+    // Check on-chain availability
+    if (isAvailable === false) {
+      setError('Username is already taken on-chain');
+      showToast('Username is already taken', 'error');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const newUser = await apiService.registerUser(username, address);
-      setUser(newUser);
-      await refreshUser();
-      showToast('Account created successfully!', 'success');
-      router.push('/dashboard');
+      // Register username on-chain first
+      registerUsername(username);
+      // The success case is handled by the useEffect hook above
     } catch (err: any) {
       console.error('Registration error:', err);
-      const errorMessage = err.response?.data?.error || 'Registration failed. Username may already be taken.';
+      const errorMessage = contractError?.message || 'Registration failed. Please try again.';
       setError(errorMessage);
       showToast(errorMessage, 'error');
-    } finally {
       setLoading(false);
     }
   };
@@ -120,14 +151,26 @@ export default function Register() {
             </div>
           )}
 
+          {username && isAvailable === false && (
+            <div className="bg-warning/10 border-2 border-warning/30 text-warning px-4 py-3 rounded-lg text-sm font-medium">
+              Username is already taken
+            </div>
+          )}
+
+          {username && isAvailable === true && (
+            <div className="bg-success/10 border-2 border-success/30 text-success px-4 py-3 rounded-lg text-sm font-medium">
+              Username is available!
+            </div>
+          )}
+
           <Button
             type="submit"
-            disabled={loading || !username}
-            loading={loading}
+            disabled={loading || !username || isPending || isConfirming || isAvailable === false}
+            loading={loading || isPending || isConfirming}
             className="w-full"
             size="lg"
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {isPending ? 'Confirm in wallet...' : isConfirming ? 'Confirming on-chain...' : loading ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
 

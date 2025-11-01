@@ -23,17 +23,16 @@ export const ConnectWallet = () => {
           (!authenticationStatus || authenticationStatus === 'authenticated');
 
         return (
-          <div
-            {...(!ready && {
-              'aria-hidden': true,
-              style: {
-                opacity: 0,
-                pointerEvents: 'none',
-                userSelect: 'none',
-              },
-            })}
-          >
+          <div>
             {(() => {
+              if (!ready) {
+                return (
+                  <Button size="lg" disabled>
+                    Loading...
+                  </Button>
+                );
+              }
+
               if (!connected) {
                 return (
                   <Button onClick={openConnectModal} size="lg">

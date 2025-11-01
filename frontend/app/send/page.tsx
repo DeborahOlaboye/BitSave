@@ -8,9 +8,16 @@ import { useToast } from '@/lib/contexts/ToastContext';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
 import { apiService } from '@/lib/services/api';
-import { mezoService } from '@/lib/services/mezo';
+import {
+  useMUSDBalance,
+  useMUSDAllowance,
+  useApproveMUSD,
+  useSendToUsername,
+} from '@/lib/hooks/useContracts';
+import { CONTRACT_ADDRESSES } from '@/lib/contracts/addresses';
 import { QRCodeSVG as QRCode } from 'qrcode.react';
 import { ArrowLeft, Send as SendIcon, Download, User, DollarSign, MessageSquare, CheckCircle, XCircle, Copy, Wallet, Zap, Shield } from 'lucide-react';
+import { formatUnits, parseUnits } from 'viem';
 
 export default function Send() {
   const router = useRouter();
@@ -21,29 +28,73 @@ export default function Send() {
   const [username, setUsername] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [recipientFound, setRecipientFound] = useState<any>(null);
-  const [balance, setBalance] = useState('0.00');
+
+  // Contract hooks
+  const { data: musdBalance, refetch: refetchBalance } = useMUSDBalance(address);
+  const { data: allowance, refetch: refetchAllowance } = useMUSDAllowance(address, CONTRACT_ADDRESSES.PAYMENTS);
+  const { approve, isPending: isApproving, isConfirming: isApprovingConfirming } = useApproveMUSD();
+  const { sendToUsername, isPending: isSending, isConfirming: isSendingConfirming, isSuccess: sendSuccess, hash } = useSendToUsername();
+
+  const balance = musdBalance ? formatUnits(musdBalance, 18) : '0.00';
 
   useEffect(() => {
     if (!isConnected || !user) {
       router.push('/');
       return;
     }
-
-    loadBalance();
   }, [isConnected, user, router]);
 
-  const loadBalance = async () => {
-    if (!address) return;
+  // Handle successful transaction
+  useEffect(() => {
+    if (sendSuccess && hash && recipientFound && address) {
+      const recordTransaction = async () => {
+        try {
+          // Record transaction for sender
+          if (user) {
+            await apiService.createTransaction({
+              userId: user.id,
+              type: 'send',
+              amount,
+              recipientUsername: recipientFound.username,
+              recipientAddress: recipientFound.walletAddress,
+              txHash: hash,
+              status: 'completed',
+              note: note || undefined,
+            });
 
-    try {
-      const balanceData = await apiService.getBalances(address);
-      setBalance(balanceData.musdBalance);
-    } catch (error) {
-      console.error('Error loading balance:', error);
+            // Record transaction for recipient
+            await apiService.createTransaction({
+              userId: recipientFound.id,
+              type: 'receive',
+              amount,
+              recipientUsername: user.username,
+              recipientAddress: address,
+              txHash: hash,
+              status: 'completed',
+              note: note || undefined,
+            });
+          }
+
+          showToast(`Successfully sent $${amount} to @${recipientFound.username}!`, 'success');
+          setUsername('');
+          setAmount('');
+          setNote('');
+          setRecipientFound(null);
+          refetchBalance();
+        } catch (error) {
+          console.error('Error recording transaction:', error);
+          showToast('Transaction succeeded but failed to record in database', 'warning');
+        }
+      };
+      recordTransaction();
     }
+  }, [sendSuccess, hash, recipientFound, address, user, amount, note, showToast, refetchBalance]);
+
+  const loadBalance = () => {
+    refetchBalance();
+    refetchAllowance();
   };
 
   const searchUser = async () => {
@@ -91,50 +142,36 @@ export default function Send() {
       return;
     }
 
-    setLoading(true);
-
     try {
-      const txHash = await mezoService.transferMusd(recipientFound.walletAddress, amount);
+      // Check if approval is needed
+      const amountWei = parseUnits(amount, 18);
+      const allowanceWei = allowance || BigInt(0);
 
-      // Record transaction for sender
-      if (user) {
-        await apiService.createTransaction({
-          userId: user.id,
-          type: 'send',
-          amount,
-          recipientUsername: recipientFound.username,
-          recipientAddress: recipientFound.walletAddress,
-          txHash: txHash,
-          status: 'completed',
-          note: note || undefined,
-        });
-
-        // Record transaction for recipient
-        await apiService.createTransaction({
-          userId: recipientFound.id,
-          type: 'receive',
-          amount,
-          recipientUsername: user.username,
-          recipientAddress: address,
-          txHash: txHash,
-          status: 'completed',
-          note: note || undefined,
-        });
+      if (allowanceWei < amountWei) {
+        showToast('Approving MUSD for payment...', 'info');
+        approve(CONTRACT_ADDRESSES.PAYMENTS, amountWei);
+        await refetchAllowance();
+      } else {
+        // Send payment through contract
+        sendToUsername(username, amountWei, note || '');
       }
-
-      showToast(`Successfully sent $${amount} to @${recipientFound.username}!`, 'success');
-      setUsername('');
-      setAmount('');
-      setNote('');
-      setRecipientFound(null);
-      await loadBalance();
+      // The success case is handled by the useEffect hook above
     } catch (error: any) {
       console.error('Send error:', error);
       showToast(error.message || 'Transaction failed', 'error');
-    } finally {
-      setLoading(false);
     }
   };
+
+  const isLoading = isApproving || isApprovingConfirming || isSending || isSendingConfirming;
+  const loadingText = isApproving
+    ? 'Approve in wallet...'
+    : isApprovingConfirming
+    ? 'Approving...'
+    : isSending
+    ? 'Confirm in wallet...'
+    : isSendingConfirming
+    ? 'Sending...'
+    : 'Send Payment';
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -241,7 +278,7 @@ export default function Send() {
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full pl-10 pr-12 py-4 text-lg border-2 border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                     placeholder="username"
-                    disabled={loading}
+                    disabled={isLoading}
                   />
                   {searchLoading && (
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -292,7 +329,7 @@ export default function Send() {
                     onChange={(e) => setAmount(e.target.value)}
                     className="w-full pl-10 pr-4 py-4 text-2xl border-2 border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                     placeholder="0.00"
-                    disabled={loading}
+                    disabled={isLoading}
                     step="0.01"
                     min="0"
                   />
@@ -320,13 +357,13 @@ export default function Send() {
               {/* Send Button */}
               <Button
                 onClick={handleSend}
-                disabled={loading || !recipientFound || !amount || parseFloat(amount) <= 0}
-                loading={loading}
+                disabled={isLoading || !recipientFound || !amount || parseFloat(amount) <= 0}
+                loading={isLoading}
                 className="w-full"
                 size="lg"
               >
                 <SendIcon className="w-5 h-5 mr-2" />
-                Send Payment
+                {loadingText}
               </Button>
 
               {/* Features Grid */}

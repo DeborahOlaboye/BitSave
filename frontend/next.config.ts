@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Transpile @mezo-org packages that contain TypeScript
+  transpilePackages: [
+    '@mezo-org/passport',
+    '@mezo-org/orangekit',
+    '@mezo-org/orangekit-contracts',
+    '@mezo-org/orangekit-smart-account',
+  ],
+
   webpack: (config) => {
     config.externals.push("pino-pretty", "lokijs", "encoding");
 
