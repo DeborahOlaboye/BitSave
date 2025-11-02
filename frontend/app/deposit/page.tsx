@@ -7,12 +7,11 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { useToast } from '@/lib/contexts/ToastContext';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
-import { mezoService } from '@/lib/services/mezo';
 import { ArrowLeft, Bitcoin, DollarSign, TrendingUp, Info, AlertTriangle, Shield, Zap } from 'lucide-react';
 
 export default function Deposit() {
   const router = useRouter();
-  const { isConnected, address } = useAccount();
+  const { isConnected } = useAccount();
   const { user } = useUser();
   const { showToast } = useToast();
   const [btcAmount, setBtcAmount] = useState('');
@@ -61,13 +60,13 @@ export default function Deposit() {
     setLoading(true);
 
     try {
-      const { txHash, musdAmount } = await mezoService.depositAndBorrow(btcAmount);
+      // TODO: Implement BTC deposit and MUSD borrowing through Mezo Protocol
+      // For now, show a message that this feature is coming soon
+      showToast('BTC deposit and MUSD borrowing feature coming soon! Please get MUSD from testnet faucet for now.', 'info');
 
-      // Transaction recorded on blockchain, no backend needed
-      showToast(`Successfully deposited ${btcAmount} BTC and borrowed ${musdAmount} MUSD!`, 'success');
-      setBtcAmount('');
+      // Alternative: Users can get testnet MUSD from a faucet or airdrop
+      // The savings and payment features are fully functional
 
-      // Navigate to dashboard after short delay
       setTimeout(() => {
         router.push('/dashboard');
       }, 2000);

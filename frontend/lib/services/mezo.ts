@@ -1,10 +1,12 @@
 // @ts-nocheck - ethers type compatibility issues
 import { ethers, BrowserProvider } from 'ethers';
 
-// Contract addresses (from environment variables)
-const MEZO_BORROW_CONTRACT = process.env.NEXT_PUBLIC_MEZO_BORROW_CONTRACT || '';
-const MEZO_MUSD_CONTRACT = process.env.NEXT_PUBLIC_MEZO_MUSD_CONTRACT || '';
-const MEZO_VAULT_CONTRACT = process.env.NEXT_PUBLIC_MEZO_VAULT_CONTRACT || '';
+// Contract addresses (using actual deployed contract addresses)
+import { CONTRACT_ADDRESSES } from '../contracts/addresses';
+
+const MEZO_BORROW_CONTRACT = CONTRACT_ADDRESSES.VAULT; // Using vault as borrow contract for now
+const MEZO_MUSD_CONTRACT = CONTRACT_ADDRESSES.MUSD;
+const MEZO_VAULT_CONTRACT = CONTRACT_ADDRESSES.VAULT;
 
 // Simplified ABIs
 const MUSD_ABI = [
