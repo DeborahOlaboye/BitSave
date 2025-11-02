@@ -3,21 +3,29 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
+import { formatUnits } from 'viem';
 import { useUser } from '@/lib/contexts/UserContext';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { TransactionHistory } from '@/components/TransactionHistory';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { apiService } from '@/lib/services/api';
-import type { Balance } from '@/lib/types';
-import { Wallet, Send, ShoppingCart, RefreshCw, TrendingUp, ArrowRight, Sparkles, Bitcoin } from 'lucide-react';
+import { useMUSDBalance, useGetTotalSavings } from '@/lib/hooks/useContracts';
+import { Wallet, Send, RefreshCw, TrendingUp, ArrowRight, Sparkles, Bitcoin } from 'lucide-react';
 import Image from 'next/image';
 
 export default function Dashboard() {
   const router = useRouter();
   const { isConnected, address } = useAccount();
   const { user, loading: userLoading } = useUser();
-  const [balance, setBalance] = useState<Balance | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  // Fetch balances from blockchain
+  const { data: musdBalanceRaw, refetch: refetchMUSD, isLoading: loadingMUSD } = useMUSDBalance(address);
+  const { data: vaultBalanceRaw, refetch: refetchVault, isLoading: loadingVault } = useGetTotalSavings(address);
+
+  // Convert BigInt to formatted strings
+  const musdBalance = musdBalanceRaw ? formatUnits(musdBalanceRaw as bigint, 18) : '0.00';
+  const vaultBalance = vaultBalanceRaw ? formatUnits(vaultBalanceRaw as bigint, 18) : '0.00';
+  const totalBalance = (parseFloat(musdBalance) + parseFloat(vaultBalance)).toFixed(2);
+  const loading = loadingMUSD || loadingVault;
 
   useEffect(() => {
     if (!isConnected) {
@@ -29,29 +37,12 @@ export default function Dashboard() {
       router.push('/register');
       return;
     }
-
-    if (user && address) {
-      loadBalance();
-    }
-  }, [isConnected, user, userLoading, address, router]);
+  }, [isConnected, user, userLoading, router]);
 
   const loadBalance = async () => {
     if (!address) return;
-
-    setLoading(true);
-    try {
-      const balanceData = await apiService.getBalances(address);
-      setBalance(balanceData);
-    } catch (error) {
-      console.error('Error loading balance:', error);
-      setBalance({
-        musdBalance: '0.00',
-        vaultBalance: '0.00',
-        totalBalance: '0.00',
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Refetch balances from blockchain
+    await Promise.all([refetchMUSD(), refetchVault()]);
   };
 
   if (userLoading) {
@@ -93,14 +84,6 @@ export default function Dashboard() {
       route: '/send',
       gradient: 'from-blue-500 to-indigo-600',
       iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
-    },
-    {
-      icon: ShoppingCart,
-      title: 'Spend',
-      description: 'Buy airtime, data, and gift cards',
-      route: '/spend',
-      gradient: 'from-purple-500 to-pink-600',
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600',
     },
   ];
 
@@ -155,7 +138,7 @@ export default function Dashboard() {
                   <div className="h-12 w-48 bg-white/20 rounded-lg animate-pulse"></div>
                 ) : (
                   <h3 className="text-5xl md:text-6xl font-bold tracking-tight">
-                    ${balance?.totalBalance || '0.00'}
+                    ${totalBalance}
                   </h3>
                 )}
                 <p className="text-white/60 text-sm mt-2">MUSD (Bitcoin-backed)</p>
@@ -178,8 +161,8 @@ export default function Dashboard() {
                   </div>
                   <p className="text-white/80 text-sm font-medium">Wallet Balance</p>
                 </div>
-                <p className="text-3xl font-bold">${balance?.musdBalance || '0.00'}</p>
-                <p className="text-white/60 text-xs mt-1">Available to send or spend</p>
+                <p className="text-3xl font-bold">${parseFloat(musdBalance).toFixed(2)}</p>
+                <p className="text-white/60 text-xs mt-1">Available to send</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20 hover:bg-white/15 transition-all duration-standard">
                 <div className="flex items-center gap-2 mb-2">
@@ -188,7 +171,7 @@ export default function Dashboard() {
                   </div>
                   <p className="text-white/80 text-sm font-medium">Vault Balance</p>
                 </div>
-                <p className="text-3xl font-bold">${balance?.vaultBalance || '0.00'}</p>
+                <p className="text-3xl font-bold">${parseFloat(vaultBalance).toFixed(2)}</p>
                 <p className="text-white/60 text-xs mt-1">Earning 5% APY</p>
               </div>
             </div>
@@ -243,7 +226,7 @@ export default function Dashboard() {
             <span>Recent Transactions</span>
             <div className="flex-1 h-0.5 bg-gradient-to-r from-primary/20 to-transparent"></div>
           </h3>
-          <TransactionHistory userId={user.id} />
+          <TransactionHistory userAddress={address!} />
         </div>
       </main>
     </div>

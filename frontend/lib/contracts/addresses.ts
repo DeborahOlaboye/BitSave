@@ -9,7 +9,7 @@ export const CONTRACT_ADDRESSES = {
 // Validate addresses are set
 if (typeof window !== 'undefined') {
   Object.entries(CONTRACT_ADDRESSES).forEach(([key, value]) => {
-    if (!value || value === 'undefined') {
+    if (!value || value.length < 42) {
       console.warn(`${key} contract address not set in environment variables`);
     }
   });

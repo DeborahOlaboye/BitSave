@@ -2,8 +2,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import type { User } from '../types';
-import { apiService } from '../services/api';
+import { useGetUsername } from '../hooks/useContracts';
+
+interface User {
+  username: string;
+  walletAddress: string;
+}
 
 interface UserContextType {
   user: User | null;
@@ -17,9 +21,11 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { address, isConnected } = useAccount();
+
+  // Fetch username from blockchain
+  const { data: username, isLoading: usernameLoading, refetch } = useGetUsername(address);
 
   const refreshUser = async () => {
     if (!address || !isConnected) {
@@ -27,31 +33,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
     try {
-      const userData = await apiService.getUserByAddress(address);
-      setUser(userData);
+      // Refetch username from blockchain
+      const result = await refetch();
+      const fetchedUsername = result.data as string | undefined;
+
+      // Username exists if it's not empty string
+      if (fetchedUsername && fetchedUsername.length > 0) {
+        setUser({
+          username: fetchedUsername,
+          walletAddress: address,
+        });
+      } else {
+        setUser(null);
+      }
     } catch (err) {
       console.error('Error fetching user:', err);
       setError('Failed to load user data');
       setUser(null);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (isConnected && address) {
-      refreshUser();
+      // Check if username exists (not empty string)
+      if (username && username.length > 0) {
+        setUser({
+          username,
+          walletAddress: address,
+        });
+      } else {
+        setUser(null);
+      }
     } else {
       setUser(null);
     }
-  }, [address, isConnected]);
+  }, [address, isConnected, username]);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, setUser, refreshUser }}>
+    <UserContext.Provider value={{ user, loading: usernameLoading, error, setUser, refreshUser }}>
       {children}
     </UserContext.Provider>
   );

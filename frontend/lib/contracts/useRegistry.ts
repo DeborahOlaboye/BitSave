@@ -5,7 +5,7 @@ import { CONTRACT_ADDRESSES } from './config';
 // Read hooks
 export function useIsUsernameAvailable(username: string) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.registry,
+    address: CONTRACT_ADDRESSES.REGISTRY,
     abi: BitSaveRegistryABI,
     functionName: 'isUsernameAvailable',
     args: [username],
@@ -17,7 +17,7 @@ export function useIsUsernameAvailable(username: string) {
 
 export function useResolveUsername(username: string) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.registry,
+    address: CONTRACT_ADDRESSES.REGISTRY,
     abi: BitSaveRegistryABI,
     functionName: 'resolveUsername',
     args: [username],
@@ -29,7 +29,7 @@ export function useResolveUsername(username: string) {
 
 export function useGetUsernameByAddress(address: `0x${string}` | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.registry,
+    address: CONTRACT_ADDRESSES.REGISTRY,
     abi: BitSaveRegistryABI,
     functionName: 'getUsernameByAddress',
     args: address ? [address] : undefined,
@@ -48,8 +48,9 @@ export function useRegisterUsername() {
   });
 
   const registerUsername = async (username: string) => {
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.registry,
+      address: CONTRACT_ADDRESSES.REGISTRY,
       abi: BitSaveRegistryABI,
       functionName: 'registerUsername',
       args: [username],

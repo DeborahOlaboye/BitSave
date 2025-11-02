@@ -55,3 +55,30 @@ export interface ApiResponse<T> {
   error?: string;
   message?: string;
 }
+
+// Bitrefill types
+export interface BitrefillProduct {
+  id: string;
+  name: string;
+  category: 'airtime' | 'data' | 'giftcards';
+  country: string;
+  currency: string;
+  minAmount: number;
+  maxAmount: number;
+  image: string;
+}
+
+export type BitrefillOrderStatus = 'pending' | 'completed' | 'failed';
+
+export interface BitrefillOrder {
+  id: string;
+  productId: string;
+  amount: number;
+  phoneNumber: string;
+  status: BitrefillOrderStatus;
+  invoice?: {
+    url: string;
+    address: string;
+    amount: string;
+  };
+}

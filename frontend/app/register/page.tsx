@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useToast } from '@/lib/contexts/ToastContext';
-import { apiService } from '@/lib/services/api';
 import { useCheckUsernameAvailability, useRegisterUsername } from '@/lib/hooks/useContracts';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
@@ -34,24 +33,22 @@ export default function Register() {
   // Handle successful on-chain registration
   useEffect(() => {
     if (isSuccess && address) {
-      // After on-chain registration succeeds, register in backend
+      // Registration complete - user data will be fetched from blockchain via UserContext
       const completeRegistration = async () => {
         try {
-          const newUser = await apiService.registerUser(username, address);
-          setUser(newUser);
-          await refreshUser();
+          await refreshUser(); // This will fetch the username from blockchain
           showToast('Account created successfully!', 'success');
+          setLoading(false);
           router.push('/dashboard');
         } catch (err: any) {
-          console.error('Backend registration error:', err);
-          showToast('On-chain registration succeeded, but backend sync failed. Please contact support.', 'warning');
-        } finally {
+          console.error('Error refreshing user:', err);
+          showToast('Registration succeeded! Please refresh the page.', 'success');
           setLoading(false);
         }
       };
       completeRegistration();
     }
-  }, [isSuccess, address, username, setUser, refreshUser, showToast, router]);
+  }, [isSuccess, address, refreshUser, showToast, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

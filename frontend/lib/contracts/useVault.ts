@@ -15,7 +15,7 @@ export interface SavingsGoal {
 // Read hooks
 export function useGetUserGoals(address: `0x${string}` | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.vault,
+    address: CONTRACT_ADDRESSES.VAULT,
     abi: BitSaveVaultABI,
     functionName: 'getUserGoals',
     args: address ? [address] : undefined,
@@ -27,7 +27,7 @@ export function useGetUserGoals(address: `0x${string}` | undefined) {
 
 export function useGetTotalSavings(address: `0x${string}` | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.vault,
+    address: CONTRACT_ADDRESSES.VAULT,
     abi: BitSaveVaultABI,
     functionName: 'getTotalSavings',
     args: address ? [address] : undefined,
@@ -39,7 +39,7 @@ export function useGetTotalSavings(address: `0x${string}` | undefined) {
 
 export function useGetGoalCount(address: `0x${string}` | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.vault,
+    address: CONTRACT_ADDRESSES.VAULT,
     abi: BitSaveVaultABI,
     functionName: 'goalCount',
     args: address ? [address] : undefined,
@@ -51,7 +51,7 @@ export function useGetGoalCount(address: `0x${string}` | undefined) {
 
 export function useGetSavingsGoal(address: `0x${string}` | undefined, goalId: bigint | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.vault,
+    address: CONTRACT_ADDRESSES.VAULT,
     abi: BitSaveVaultABI,
     functionName: 'savingsGoals',
     args: address && goalId !== undefined ? [address, goalId] : undefined,
@@ -71,8 +71,9 @@ export function useCreateGoal() {
 
   const createGoal = async (name: string, targetAmount: string, unlockTime: number = 0) => {
     const targetAmountWei = parseUnits(targetAmount, 18);
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.vault,
+      address: CONTRACT_ADDRESSES.VAULT,
       abi: BitSaveVaultABI,
       functionName: 'createGoal',
       args: [name, targetAmountWei, BigInt(unlockTime)],
@@ -98,8 +99,9 @@ export function useDepositToGoal() {
 
   const deposit = async (goalId: number, amount: string) => {
     const amountWei = parseUnits(amount, 18);
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.vault,
+      address: CONTRACT_ADDRESSES.VAULT,
       abi: BitSaveVaultABI,
       functionName: 'deposit',
       args: [BigInt(goalId), amountWei],
@@ -125,8 +127,9 @@ export function useWithdrawFromGoal() {
 
   const withdraw = async (goalId: number, amount: string = '0') => {
     const amountWei = amount === '0' ? BigInt(0) : parseUnits(amount, 18);
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.vault,
+      address: CONTRACT_ADDRESSES.VAULT,
       abi: BitSaveVaultABI,
       functionName: 'withdraw',
       args: [BigInt(goalId), amountWei],
@@ -151,8 +154,9 @@ export function useCloseGoal() {
   });
 
   const closeGoal = async (goalId: number) => {
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.vault,
+      address: CONTRACT_ADDRESSES.VAULT,
       abi: BitSaveVaultABI,
       functionName: 'closeGoal',
       args: [BigInt(goalId)],

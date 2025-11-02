@@ -14,7 +14,7 @@ export enum PaymentType {
 // Read hooks
 export function useGetUserPayments(address: `0x${string}` | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.payments,
+    address: CONTRACT_ADDRESSES.PAYMENTS,
     abi: BitSavePaymentsABI,
     functionName: 'getUserPayments',
     args: address ? [address] : undefined,
@@ -26,7 +26,7 @@ export function useGetUserPayments(address: `0x${string}` | undefined) {
 
 export function useGetPayment(paymentId: bigint | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.payments,
+    address: CONTRACT_ADDRESSES.PAYMENTS,
     abi: BitSavePaymentsABI,
     functionName: 'getPayment',
     args: paymentId !== undefined ? [paymentId] : undefined,
@@ -38,7 +38,7 @@ export function useGetPayment(paymentId: bigint | undefined) {
 
 export function useGetRecentPayments(count: number = 10) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.payments,
+    address: CONTRACT_ADDRESSES.PAYMENTS,
     abi: BitSavePaymentsABI,
     functionName: 'getRecentPayments',
     args: [BigInt(count)],
@@ -47,7 +47,7 @@ export function useGetRecentPayments(count: number = 10) {
 
 export function useGetTotalPayments() {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.payments,
+    address: CONTRACT_ADDRESSES.PAYMENTS,
     abi: BitSavePaymentsABI,
     functionName: 'getTotalPayments',
   });
@@ -56,7 +56,7 @@ export function useGetTotalPayments() {
 // MUSD token hooks
 export function useMUSDBalance(address: `0x${string}` | undefined) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.musd,
+    address: CONTRACT_ADDRESSES.MUSD,
     abi: ERC20ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -68,7 +68,7 @@ export function useMUSDBalance(address: `0x${string}` | undefined) {
 
 export function useMUSDAllowance(owner: `0x${string}` | undefined, spender: `0x${string}`) {
   return useReadContract({
-    address: CONTRACT_ADDRESSES.musd,
+    address: CONTRACT_ADDRESSES.MUSD,
     abi: ERC20ABI,
     functionName: 'allowance',
     args: owner ? [owner, spender] : undefined,
@@ -86,10 +86,11 @@ export function useApproveMUSD() {
     hash,
   });
 
-  const approve = async (spender: `0x${string}`, amount: string) => {
+  const approve = (spender: `0x${string}`, amount: string) => {
     const amountWei = parseUnits(amount, 18); // MUSD has 18 decimals
-    return writeContract({
-      address: CONTRACT_ADDRESSES.musd,
+    // @ts-ignore - wagmi type issue with writeContract
+    writeContract({
+      address: CONTRACT_ADDRESSES.MUSD,
       abi: ERC20ABI,
       functionName: 'approve',
       args: [spender, amountWei],
@@ -115,8 +116,9 @@ export function useSendToUsername() {
 
   const sendToUsername = async (username: string, amount: string, note: string = '') => {
     const amountWei = parseUnits(amount, 18);
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.payments,
+      address: CONTRACT_ADDRESSES.PAYMENTS,
       abi: BitSavePaymentsABI,
       functionName: 'sendToUsername',
       args: [username, amountWei, note],
@@ -142,8 +144,9 @@ export function useSendToAddress() {
 
   const sendToAddress = async (recipient: `0x${string}`, amount: string, note: string = '') => {
     const amountWei = parseUnits(amount, 18);
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.payments,
+      address: CONTRACT_ADDRESSES.PAYMENTS,
       abi: BitSavePaymentsABI,
       functionName: 'sendToAddress',
       args: [recipient, amountWei, note],
@@ -169,8 +172,9 @@ export function useRecordPurchase() {
 
   const recordPurchase = async (amount: string, purchaseType: PaymentType, details: string) => {
     const amountWei = parseUnits(amount, 18);
+    // @ts-ignore - wagmi type issue with writeContract
     return writeContract({
-      address: CONTRACT_ADDRESSES.payments,
+      address: CONTRACT_ADDRESSES.PAYMENTS,
       abi: BitSavePaymentsABI,
       functionName: 'recordPurchase',
       args: [amountWei, purchaseType, details],

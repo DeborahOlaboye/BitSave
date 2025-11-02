@@ -1,9 +1,27 @@
-// Import official Mezo testnet configuration from Mezo Passport
-import { mezoTestnet as officialMezoTestnet } from '@mezo-org/passport';
+import { defineChain } from 'viem';
 
-// Export the official Mezo testnet configuration
-// This includes the correct chain ID (31611), RPC URL, and explorer
-export const mezoTestnet = officialMezoTestnet;
-
-// For mainnet deployment later, you can also import:
-// import { mezo as mezoMainnet } from '@mezo-org/passport';
+// Define Mezo testnet chain configuration
+export const mezoTestnet = defineChain({
+  id: 31611,
+  name: 'Mezo Testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Bitcoin',
+    symbol: 'BTC',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.test.mezo.org'],
+    },
+    public: {
+      http: ['https://rpc.test.mezo.org'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Mezo Explorer',
+      url: 'https://explorer.test.mezo.org',
+    },
+  },
+  testnet: true,
+});

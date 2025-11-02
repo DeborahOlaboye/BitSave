@@ -42,7 +42,7 @@ export default function Save() {
   const { data: goals, refetch: refetchGoals } = useGetUserGoals(address);
   const { data: totalSavings, refetch: refetchTotal } = useGetTotalSavings(address);
   const { data: musdBalance } = useMUSDBalance(address);
-  const { data: allowance, refetch: refetchAllowance } = useMUSDAllowance(address, CONTRACT_ADDRESSES.vault);
+  const { data: allowance, refetch: refetchAllowance } = useMUSDAllowance(address, CONTRACT_ADDRESSES.VAULT);
 
   const { createGoal, isPending: isCreating, isConfirming: isCreatingConfirming, isSuccess: createSuccess } = useCreateGoal();
   const { deposit, isPending: isDepositing, isConfirming: isDepositingConfirming, isSuccess: depositSuccess } = useDepositToGoal();

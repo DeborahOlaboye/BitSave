@@ -7,7 +7,6 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { useToast } from '@/lib/contexts/ToastContext';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
-import { apiService } from '@/lib/services/api';
 import { mezoService } from '@/lib/services/mezo';
 import { ArrowLeft, Bitcoin, DollarSign, TrendingUp, Info, AlertTriangle, Shield, Zap } from 'lucide-react';
 
@@ -18,7 +17,8 @@ export default function Deposit() {
   const { showToast } = useToast();
   const [btcAmount, setBtcAmount] = useState('');
   const [loading, setLoading] = useState(false);
-  const [btcPrice, setBtcPrice] = useState(0);
+  // TODO: Fetch BTC price from a price oracle or API (CoinGecko, CoinMarketCap)
+  const [btcPrice, setBtcPrice] = useState(50000); // Fallback price
 
   useEffect(() => {
     if (!isConnected || !user) {
@@ -31,12 +31,12 @@ export default function Deposit() {
 
   const loadBtcPrice = async () => {
     try {
-      const priceData = await apiService.getBtcPrice();
-      setBtcPrice(priceData.price);
+      // TODO: Integrate with a price oracle or free API
+      // For now, use fallback price
+      setBtcPrice(50000);
     } catch (error) {
       console.error('Error loading BTC price:', error);
-      // Default fallback price
-      setBtcPrice(45000);
+      setBtcPrice(50000);
     }
   };
 
@@ -63,22 +63,7 @@ export default function Deposit() {
     try {
       const { txHash, musdAmount } = await mezoService.depositAndBorrow(btcAmount);
 
-      // Record transaction
-      if (user) {
-        await apiService.createTransaction({
-          userId: user.id,
-          type: 'deposit',
-          amount: musdAmount,
-          txHash: txHash,
-          status: 'completed',
-          metadata: {
-            btcAmount,
-            btcPrice,
-            usdValue,
-          },
-        });
-      }
-
+      // Transaction recorded on blockchain, no backend needed
       showToast(`Successfully deposited ${btcAmount} BTC and borrowed ${musdAmount} MUSD!`, 'success');
       setBtcAmount('');
 
@@ -218,7 +203,7 @@ export default function Deposit() {
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="w-5 h-5 text-blue-600" />
-                      <p className="text-sm font-medium text-text-secondary">You'll Receive</p>
+                      <p className="text-sm font-medium text-text-secondary">You&apos;ll Receive</p>
                     </div>
                     <p className="text-3xl font-bold text-blue-600">${parseFloat(expectedMusd).toLocaleString()}</p>
                     <p className="text-xs text-text-secondary mt-1">MUSD</p>
@@ -275,7 +260,7 @@ export default function Deposit() {
                 <Info className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
                 <div className="space-y-2 text-sm text-info-dark">
                   <p>
-                    <strong>Non-custodial:</strong> Your Bitcoin remains on Mezo's secure Bitcoin Layer 2.
+                    <strong>Non-custodial:</strong> Your Bitcoin remains on Mezo&apos;s secure Bitcoin Layer 2.
                     You maintain full control of your collateral.
                   </p>
                   <p>
@@ -306,7 +291,7 @@ export default function Deposit() {
             </div>
             <h3 className="text-lg font-bold text-secondary mb-2">100% Secure</h3>
             <p className="text-sm text-text-secondary">
-              Your BTC is secured on Mezo's Bitcoin Layer 2. Smart contracts ensure safety.
+              Your BTC is secured on Mezo&apos;s Bitcoin Layer 2. Smart contracts ensure safety.
             </p>
           </div>
 

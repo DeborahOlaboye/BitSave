@@ -1,40 +1,43 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Transaction } from '@/lib/types';
-import { apiService } from '@/lib/services/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { EmptyState } from './EmptyState';
 import { ErrorMessage } from './ErrorMessage';
 import { Button } from './Button';
 import { Receipt } from 'lucide-react';
 
-interface TransactionHistoryProps {
-  userId: number;
+interface Transaction {
+  id: string;
+  type: string;
+  amount: string;
+  recipientUsername?: string;
+  note?: string;
+  createdAt: string;
+  status: string;
+  txHash?: string;
 }
 
-export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
+interface TransactionHistoryProps {
+  userAddress: string;
+}
+
+export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userAddress }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // TODO: Implement with on-chain event fetching using viem
+  // For now, show empty state
   useEffect(() => {
-    loadTransactions();
-  }, [userId]);
+    // Placeholder: In the future, fetch events from blockchain here
+    setLoading(false);
+    setTransactions([]);
+  }, [userAddress]);
 
   const loadTransactions = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await apiService.getTransactions(userId);
-      setTransactions(data);
-    } catch (err) {
-      console.error('Error loading transactions:', err);
-      setError('Failed to load transactions');
-    } finally {
-      setLoading(false);
-    }
+    // TODO: Fetch transaction events from blockchain
+    setLoading(false);
   };
 
   const getTransactionIcon = (type: string) => {

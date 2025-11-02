@@ -7,12 +7,12 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { useToast } from '@/lib/contexts/ToastContext';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
-import { apiService } from '@/lib/services/api';
 import {
   useMUSDBalance,
   useMUSDAllowance,
   useApproveMUSD,
   useSendToUsername,
+  useResolveUsername,
 } from '@/lib/hooks/useContracts';
 import { CONTRACT_ADDRESSES } from '@/lib/contracts/addresses';
 import { QRCodeSVG as QRCode } from 'qrcode.react';
@@ -49,48 +49,15 @@ export default function Send() {
   // Handle successful transaction
   useEffect(() => {
     if (sendSuccess && hash && recipientFound && address) {
-      const recordTransaction = async () => {
-        try {
-          // Record transaction for sender
-          if (user) {
-            await apiService.createTransaction({
-              userId: user.id,
-              type: 'send',
-              amount,
-              recipientUsername: recipientFound.username,
-              recipientAddress: recipientFound.walletAddress,
-              txHash: hash,
-              status: 'completed',
-              note: note || undefined,
-            });
-
-            // Record transaction for recipient
-            await apiService.createTransaction({
-              userId: recipientFound.id,
-              type: 'receive',
-              amount,
-              recipientUsername: user.username,
-              recipientAddress: address,
-              txHash: hash,
-              status: 'completed',
-              note: note || undefined,
-            });
-          }
-
-          showToast(`Successfully sent $${amount} to @${recipientFound.username}!`, 'success');
-          setUsername('');
-          setAmount('');
-          setNote('');
-          setRecipientFound(null);
-          refetchBalance();
-        } catch (error) {
-          console.error('Error recording transaction:', error);
-          showToast('Transaction succeeded but failed to record in database', 'warning');
-        }
-      };
-      recordTransaction();
+      // Transaction recorded on blockchain, no backend needed
+      showToast(`Successfully sent $${amount} to @${recipientFound.username}!`, 'success');
+      setUsername('');
+      setAmount('');
+      setNote('');
+      setRecipientFound(null);
+      refetchBalance();
     }
-  }, [sendSuccess, hash, recipientFound, address, user, amount, note, showToast, refetchBalance]);
+  }, [sendSuccess, hash, recipientFound, address, amount, showToast, refetchBalance]);
 
   const loadBalance = () => {
     refetchBalance();
@@ -105,8 +72,11 @@ export default function Send() {
 
     setSearchLoading(true);
     try {
-      const foundUser = await apiService.getUserByUsername(username);
-      setRecipientFound(foundUser);
+      // Search for user on blockchain
+      // This will be implemented when we add useResolveUsername hook
+      // For now, just show that user search needs blockchain integration
+      setRecipientFound(null);
+      showToast('Username search will be implemented with blockchain', 'info');
     } catch (error) {
       setRecipientFound(null);
     } finally {
@@ -348,7 +318,7 @@ export default function Send() {
                   onChange={(e) => setNote(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                   placeholder="What's this payment for?"
-                  disabled={loading}
+                  disabled={isLoading}
                   maxLength={100}
                 />
                 <p className="text-xs text-text-secondary mt-2">{note.length}/100 characters</p>
