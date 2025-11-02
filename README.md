@@ -1,10 +1,5 @@
 # BitSave - Bitcoin-Backed Banking App
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
-
 BitSave is a revolutionary Bitcoin-backed banking application built on Mezo's MUSD stablecoin protocol. It enables users to save, send, and spend Bitcoin-backed dollars with instant transactions and zero fees.
 
 ## Features
