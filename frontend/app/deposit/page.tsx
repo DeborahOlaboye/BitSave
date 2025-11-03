@@ -8,6 +8,8 @@ import { useToast } from '@/lib/contexts/ToastContext';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { Button } from '@/components/Button';
 import { ArrowLeft, Bitcoin, DollarSign, TrendingUp, Info, AlertTriangle, Shield, Zap } from 'lucide-react';
+import { useOpenTrove, useGetBtcPrice } from '@/lib/hooks/useMezo';
+import { MEZO_CONTRACTS } from '@/lib/contracts/mezo-addresses';
 
 export default function Deposit() {
   const router = useRouter();
@@ -15,35 +17,48 @@ export default function Deposit() {
   const { user } = useUser();
   const { showToast } = useToast();
   const [btcAmount, setBtcAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  // TODO: Fetch BTC price from a price oracle or API (CoinGecko, CoinMarketCap)
-  const [btcPrice, setBtcPrice] = useState(50000); // Fallback price
+
+  // Use Mezo hooks for openTrove and BTC price
+  const { openTrove, hash, isConfirming, isSuccess } = useOpenTrove();
+  const { data: btcPriceData } = useGetBtcPrice();
+
+  // Convert BTC price from Wei to USD (18 decimals)
+  const btcPrice = btcPriceData ? Number(btcPriceData) / 1e18 : 50000;
 
   useEffect(() => {
     if (!isConnected || !user) {
       router.push('/');
       return;
     }
-
-    loadBtcPrice();
   }, [isConnected, user, router]);
 
-  const loadBtcPrice = async () => {
-    try {
-      // TODO: Integrate with a price oracle or free API
-      // For now, use fallback price
-      setBtcPrice(50000);
-    } catch (error) {
-      console.error('Error loading BTC price:', error);
-      setBtcPrice(50000);
+  // Redirect to dashboard on successful deposit
+  useEffect(() => {
+    if (isSuccess && hash) {
+      console.log('Transaction successful! Hash:', hash);
+      showToast('Successfully deposited BTC and received MUSD!', 'success');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
     }
-  };
+  }, [isSuccess, hash, router, showToast]);
+
+  // Log confirmation status
+  useEffect(() => {
+    if (isConfirming) {
+      console.log('Transaction confirming...', hash);
+      showToast('Waiting for transaction confirmation...', 'info');
+    }
+  }, [isConfirming, hash, showToast]);
 
   const usdValue = btcAmount ? (parseFloat(btcAmount) * btcPrice).toFixed(2) : '0.00';
   const expectedMusd = btcAmount ? (parseFloat(btcAmount) * btcPrice * 0.66).toFixed(2) : '0.00'; // 150% collateral ratio = 66% LTV
   const collateralRatio = 150;
   const interestRate = 1; // 1% annual interest
-  const minDepositUsd = 1800;
+
+  // Mezo requires minimum 2000 MUSD to open a trove
+  const minMusdAmount = 2000;
+  const minDepositUsd = minMusdAmount / 0.66; // Calculate BTC value needed for 2000 MUSD at 66% LTV
   const minDepositBtc = (minDepositUsd / btcPrice).toFixed(6);
 
   const handleDeposit = async () => {
@@ -52,29 +67,41 @@ export default function Deposit() {
       return;
     }
 
-    if (parseFloat(usdValue) < minDepositUsd) {
-      showToast(`Minimum deposit is $${minDepositUsd} (${minDepositBtc} BTC)`, 'warning');
+    // Check if MUSD amount meets minimum requirement
+    const musdAmount = parseFloat(expectedMusd);
+    if (musdAmount < minMusdAmount) {
+      showToast(`You need to borrow at least ${minMusdAmount} MUSD. Current: ${musdAmount.toFixed(2)} MUSD`, 'warning');
       return;
     }
 
-    setLoading(true);
+    if (parseFloat(usdValue) < minDepositUsd) {
+      showToast(`Minimum deposit is $${minDepositUsd.toFixed(2)} (${minDepositBtc} BTC) to borrow ${minMusdAmount} MUSD`, 'warning');
+      return;
+    }
 
     try {
-      // TODO: Implement BTC deposit and MUSD borrowing through Mezo Protocol
-      // For now, show a message that this feature is coming soon
-      showToast('BTC deposit and MUSD borrowing feature coming soon! Please get MUSD from testnet faucet for now.', 'info');
+      console.log('Starting deposit with:', {
+        btcAmount,
+        expectedMusd,
+        contract: MEZO_CONTRACTS.BORROWER_OPERATIONS
+      });
 
-      // Alternative: Users can get testnet MUSD from a faucet or airdrop
-      // The savings and payment features are fully functional
+      showToast('Please confirm the transaction in your wallet...', 'info');
 
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      // Call openTrove with BTC amount and MUSD amount to borrow
+      await openTrove(btcAmount, expectedMusd);
+
+      console.log('Transaction submitted, waiting for confirmation...');
+      // Success handling is done in useEffect above
     } catch (error: any) {
       console.error('Deposit error:', error);
-      showToast(error.message || 'Deposit failed', 'error');
-    } finally {
-      setLoading(false);
+
+      // Handle user rejection
+      if (error?.message?.includes('User rejected') || error?.message?.includes('denied')) {
+        showToast('Transaction cancelled by user', 'warning');
+      } else {
+        showToast(error?.message || error?.shortMessage || 'Transaction failed. Please try again.', 'error');
+      }
     }
   };
 
@@ -149,7 +176,7 @@ export default function Deposit() {
                   onChange={(e) => setBtcAmount(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 text-2xl border-2 border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                   placeholder="0.00000000"
-                  disabled={loading}
+                  disabled={isConfirming}
                   step="0.00000001"
                   min="0"
                 />
@@ -162,16 +189,16 @@ export default function Deposit() {
             {/* Quick Select */}
             <div className="grid grid-cols-4 gap-3 mb-8">
               {[
-                { btc: '0.01', label: '0.01' },
                 { btc: '0.05', label: '0.05' },
                 { btc: '0.1', label: '0.1' },
+                { btc: '0.2', label: '0.2' },
                 { btc: '0.5', label: '0.5' },
               ].map((option) => (
                 <button
                   key={option.btc}
                   onClick={() => setBtcAmount(option.btc)}
                   className="py-3 border-2 border-border rounded-xl hover:border-primary hover:bg-primary/5 text-sm font-semibold transition-all active:scale-95 disabled:opacity-50"
-                  disabled={loading}
+                  disabled={isConfirming}
                 >
                   {option.label} BTC
                 </button>
@@ -179,14 +206,14 @@ export default function Deposit() {
             </div>
 
             {/* Minimum Deposit Warning */}
-            {btcAmount && parseFloat(usdValue) < minDepositUsd && (
+            {btcAmount && parseFloat(expectedMusd) < minMusdAmount && (
               <div className="mb-6 p-4 bg-warning/10 border border-warning rounded-xl animate-scale-in">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-warning-dark">Minimum Deposit Required</p>
+                    <p className="text-sm font-semibold text-warning-dark">Minimum Borrow Amount Required</p>
                     <p className="text-sm text-warning-dark/70 mt-1">
-                      You need to deposit at least ${minDepositUsd} ({minDepositBtc} BTC) to borrow MUSD.
+                      You need to borrow at least {minMusdAmount} MUSD. Deposit at least ${minDepositUsd.toFixed(2)} ({minDepositBtc} BTC).
                     </p>
                   </div>
                 </div>
@@ -194,7 +221,7 @@ export default function Deposit() {
             )}
 
             {/* Transaction Summary */}
-            {btcAmount && parseFloat(btcAmount) > 0 && parseFloat(usdValue) >= minDepositUsd && (
+            {btcAmount && parseFloat(btcAmount) > 0 && parseFloat(expectedMusd) >= minMusdAmount && (
               <div className="mb-8 space-y-4 animate-fade-in">
                 <h3 className="text-lg font-bold text-secondary">Transaction Summary</h3>
 
@@ -244,13 +271,13 @@ export default function Deposit() {
             {/* Deposit Button */}
             <Button
               onClick={handleDeposit}
-              disabled={loading || !btcAmount || parseFloat(btcAmount) <= 0 || parseFloat(usdValue) < minDepositUsd}
-              loading={loading}
+              disabled={isConfirming || !btcAmount || parseFloat(btcAmount) <= 0 || parseFloat(expectedMusd) < minMusdAmount}
+              loading={isConfirming}
               className="w-full"
               size="lg"
             >
               <Bitcoin className="w-5 h-5 mr-2" />
-              Deposit BTC & Borrow MUSD
+              {isConfirming ? 'Processing Deposit...' : 'Deposit BTC & Borrow MUSD'}
             </Button>
 
             {/* Info Footer */}
