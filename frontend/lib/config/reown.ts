@@ -1,47 +1,37 @@
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { createConfig, http } from 'wagmi';
 import { mainnet, arbitrum } from 'viem/chains';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
-// Get projectId from Reown Dashboard
-export const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '';
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
 if (!projectId) {
-  throw new Error('Project ID is not defined');
+  throw new Error('Project ID is not defined. Please set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in your .env.local file');
 }
 
-export const networks = [mainnet, arbitrum];
-
-// Create a custom storage implementation
-const createStorage = () => {
-  return {
-    getItem: (key: string) => {
-      if (typeof window === 'undefined') return null;
-      return localStorage.getItem(key);
-    },
-    setItem: (key: string, value: string) => {
-      if (typeof window === 'undefined') return;
-      localStorage.setItem(key, value);
-    },
-    removeItem: (key: string) => {
-      if (typeof window === 'undefined') return;
-      localStorage.removeItem(key);
-    },
-  };
-};
-
-// Set up the Wagmi Adapter (Config)
-export const wagmiAdapter = new WagmiAdapter({
-  storage: {
-    key: 'wagmi',
-    storage: createStorage(),
-  },
-  ssr: true,
-  projectId,
-  chains: networks,
+// Create Wagmi config
+const wagmiConfig = createConfig({
+  chains: [mainnet, arbitrum],
   transports: {
     [mainnet.id]: http(),
     [arbitrum.id]: http(),
   },
-  batch: { multicall: true },
-  pollingInterval: 10_000,
 });
+
+// Create Wagmi adapter for Reown
+export const wagmiAdapter = new WagmiAdapter({
+  wagmiConfig,
+  projectId,
+  ssr: true,
+});
+
+export const config = {
+  adapters: [wagmiAdapter],
+  projectId,
+  chains: [mainnet, arbitrum],
+  metadata: {
+    name: 'BitSave',
+    description: 'BitSave - Save and earn with Bitcoin',
+    url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+    icons: ['/logo.png']
+  }
+};

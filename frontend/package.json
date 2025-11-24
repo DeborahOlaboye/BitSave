@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",
-    "@mezo-org/passport": "^0.1.0-dev.1",
+    "@gemini-wallet/core": "^0.3.2",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@reown/appkit": "^1.8.14",
     "@reown/appkit-adapter-wagmi": "^1.8.14",
