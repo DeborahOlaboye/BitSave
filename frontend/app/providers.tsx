@@ -2,11 +2,11 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
-import { config, wagmiAdapter } from '@/lib/config/reown';
+import { config } from '@/lib/config/reown';
 import { UserProvider } from '@/lib/contexts/UserContext';
 import { ToastProvider } from '@/lib/contexts/ToastContext';
 import { useState, useEffect } from 'react';
-import { AppKitProvider } from '@reown/appkit';
+import { ReownProvider } from '@reown/appkit';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -24,13 +24,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <AppKitProvider adapter={wagmiAdapter}>
+        <ReownProvider>
           <UserProvider>
             <ToastProvider>
               {children}
             </ToastProvider>
           </UserProvider>
-        </AppKitProvider>
+        </ReownProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
